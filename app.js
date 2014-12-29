@@ -6,6 +6,8 @@
 
 //"use strict";
 
+// TODO: Continue with ssl enhancement as per 1:12 into the above video.
+
 var express = require ("express");
 var bodyParser = require("body-parser");
 var cookieParser = require("cookie-parser");
@@ -90,7 +92,7 @@ app.get('/logout', function (req, res) {
     res.redirect('/');
 });
 
-app.use('/api', passport.authenticate('basic'));
+app.use('/api', passport.authenticate('basic', { session: false }));
 
 app.get('/api/data', ensureAuthenticated, function (req, res) {
     res.json([
