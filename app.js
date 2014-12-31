@@ -1,12 +1,17 @@
 // 
 // Passport authentication demo.
 //
-// Built from the presentation by Jason Diamond https://www.youtube.com/watch?v=twav6O53zIQ
+// Built from the presentation by Jason Diamond, "Authentication of Express Node js Applications" 
+//     https://www.youtube.com/watch?v=twav6O53zIQ
 //
-
+// With aditional advice from Scott Smith,
+//     http://scottksmith.com/blog/2014/09/21/protect-your-node-apps-noggin-with-helmet/ 
+//
 //"use strict";
 
-// TODO: Continue with ssl enhancement as per 1:12 into the above video.
+// TODO: Continue with ssl enhancement as per 00:53:00 into the above video.
+// TODO: Protect against CSRF with csurf.
+// TODO: Use caja input sanitizer
 
 var express = require ("express");
 var bodyParser = require("body-parser");
@@ -18,18 +23,56 @@ var passport = require('passport');
 var passportLocal = require('passport-local');
 var passportHttp = require('passport-http');
 
+var helmet = require('helmet');
+
 process.title = 'passport-demo';
 
 var app = express();
 
+// Implement Content Security Policy (CSP) with Helmet
+app.use(helmet.csp({
+    defaultSrc:  ["'self'"],
+    scriptSrc:   ['*.google-analytics.com'],
+    styleSrc:    ["'unsafe-inline'"],
+    imgSrc:      ['*.google-analytics.com'],
+    connectSrc:  ["'none'"],
+    fontSrc:     [],
+    objectSrc:   [],
+    mediaSrc:    [],
+    frameSrc:    []
+}));
+
+// Implement X-XSS-Protection
+app.use(helmet.xssFilter());
+
+// Implement X-Frame: Deny
+app.use(helmet.xframe('deny'));
+
+// Implement Strict-Transport-Security
+// Note: This does not work unless we actually use HTTPS (req.secure = true) 
+app.use(helmet.hsts({
+      maxAge: 7776000000,      // 90 days
+      includeSubdomains: true
+}));
+
+// Hide X-Powered-By
+app.use(helmet.hidePoweredBy());
+
+
 app.set('view engine', 'ejs');
+
 
 app.use(bodyParser.urlencoded({ extended: false}));
 app.use(cookieParser());
+
 app.use(expressSession({
     secret: process.env.SESSION_SECRET || 'secret',
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+//        secure:   true            // TODO: This stops our log in working, needs SSL ?
+    }
 }));
 
 app.use(passport.initialize());
@@ -103,7 +146,6 @@ app.get('/api/data', ensureAuthenticated, function (req, res) {
         {value: 'omg'}
     ]);
 });
-
 
 // Note: This logout is a work around for the fact the Chrome, FF, etc seem to remeber basic 
 //       auth credentials and they are hard to clear from the browser.
