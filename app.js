@@ -7,13 +7,14 @@
 // With aditional advice from Scott Smith,
 //     http://scottksmith.com/blog/2014/09/21/protect-your-node-apps-noggin-with-helmet/ 
 //
-//"use strict";
 
 // TODO: Continue with ssl enhancement as per 00:53:00 into the above video.
 // TODO: Protect against CSRF with csurf.
 // TODO: Use caja input sanitizer
 
-var express = require ("express");
+"use strict";
+
+var express = require("express");
 var bodyParser = require("body-parser");
 var cookieParser = require("cookie-parser");
 var expressSession = require("express-session");
@@ -25,7 +26,7 @@ var passportHttp = require('passport-http');
 
 var helmet = require('helmet');
 
-process.title = 'passport-demo';
+process.title = 'secure_express_demo';
 
 var app = express();
 
@@ -51,8 +52,8 @@ app.use(helmet.xframe('deny'));
 // Implement Strict-Transport-Security
 // Note: This does not work unless we actually use HTTPS (req.secure = true) 
 app.use(helmet.hsts({
-      maxAge: 7776000000,      // 90 days
-      includeSubdomains: true
+    maxAge: 7776000000,      // 90 days
+    includeSubdomains: true
 }));
 
 // Hide X-Powered-By
@@ -78,13 +79,10 @@ app.use(expressSession({
 app.use(passport.initialize());
 app.use(passport.session());
 
-passport.use(new passportLocal.Strategy(verifyCredentials));
 
-passport.use(new passportHttp.BasicStrategy(verifyCredentials));
-
-function verifyCredentials (username, password, done) {
+function verifyCredentials(username, password, done) {
     // Pretend this is using a real database!
-    if ((username === 'pi') && (password === 'pi')) {
+    if (username === password) {
         done(null, {id: username, name: username});
     } else {
         done(null, null);
@@ -92,6 +90,9 @@ function verifyCredentials (username, password, done) {
     // done(new Error('ouch!'); // Use if error in database or whatever.
 }
 
+passport.use(new passportLocal.Strategy(verifyCredentials));
+
+passport.use(new passportHttp.BasicStrategy(verifyCredentials));
 
 passport.serializeUser(function (user, done) {
     done(null, user.id);
@@ -99,7 +100,7 @@ passport.serializeUser(function (user, done) {
 
 passport.deserializeUser(function (id, done) {
      // Query database or cache here
-     done(null, { id: id, name: id });
+    done(null, { id: id, name: id });
 });
 
 
@@ -111,21 +112,21 @@ function ensureAuthenticated(req, res, next) {
     }
 }
 
-app.get('/', function(req, res) {
-     // TODO: AN IMPORTANT DECISION LIKE isAuthenticated SHOULD NOT BE LEFT TO THE VIEW !
-     //       DIFFERENT VIEWS SHOULD BE SELECTED FOR LOGED IN OR LOGED OUT
-     res.render('index', {
-         isAuthenticated: req.isAuthenticated(),
-         user: req.user
-     });
+app.get('/', function (req, res) {
+    // TODO: AN IMPORTANT DECISION LIKE isAuthenticated SHOULD NOT BE LEFT TO THE VIEW !
+    //       DIFFERENT VIEWS SHOULD BE SELECTED FOR LOGED IN OR LOGED OUT
+    res.render('index', {
+        isAuthenticated: req.isAuthenticated(),
+        user: req.user
+    });
 });
 
-app.get('/login', function(req, res) {
+app.get('/login', function (req, res) {
     res.render('login');
 });
 
 
-app.post('/login', passport.authenticate('local'), function(req, res) {
+app.post('/login', passport.authenticate('local'), function (req, res) {
     res.redirect('/');
 });
 
@@ -156,7 +157,7 @@ app.get('/api/logout', function (req, res) {
 
 var port = process.env.PORT || 1337;
 
-app.listen (port, function() {
+app.listen(port, function () {
     console.log('http://127.0.0.1:' + port + '/');
 });
 
