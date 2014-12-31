@@ -1,7 +1,7 @@
 {
-  "name": "passport_demo",
+  "name": "secure_express_demo",
   "version": "0.0.1",
-  "description": "Authentication of Express Node js Applications from Jason Diamond's video presentation",
+  "description": "A demo Express with passport authentication and other security features",
   "main": "app.js",
   "private": true,
   "dependencies": {
@@ -19,6 +19,6 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "ZiCog",
   "license": "MIT"
 }
