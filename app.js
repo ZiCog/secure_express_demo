@@ -18,7 +18,7 @@ var express = require("express");
 var bodyParser = require("body-parser");
 var cookieParser = require("cookie-parser");
 var expressSession = require("express-session");
-
+var path = require('path');
 
 var passport = require('passport');
 var passportLocal = require('passport-local');
@@ -33,14 +33,15 @@ var app = express();
 // Implement Content Security Policy (CSP) with Helmet
 app.use(helmet.csp({
     defaultSrc:  ["'self'"],
-    scriptSrc:   ['*.google-analytics.com'],
-    styleSrc:    ["'unsafe-inline'"],
-    imgSrc:      ['*.google-analytics.com'],
+    scriptSrc:   [],
+    styleSrc:    ["'self'"],
+    imgSrc:      [],
     connectSrc:  ["'none'"],
     fontSrc:     [],
     objectSrc:   [],
     mediaSrc:    [],
     frameSrc:    []
+// TODO: CSP Violation reporting
 }));
 
 // Implement X-XSS-Protection
@@ -82,6 +83,7 @@ app.use(passport.session());
 
 function verifyCredentials(username, password, done) {
     // Pretend this is using a real database!
+    console.log("Verifying user:", username, " Password:", password);
     if (username === password) {
         done(null, {id: username, name: username});
     } else {
@@ -111,6 +113,9 @@ function ensureAuthenticated(req, res, next) {
         res.sendStatus(403);
     }
 }
+
+// Server static files from our public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', function (req, res) {
     // TODO: AN IMPORTANT DECISION LIKE isAuthenticated SHOULD NOT BE LEFT TO THE VIEW !
