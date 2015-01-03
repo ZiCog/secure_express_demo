@@ -19,6 +19,7 @@ var express = require("express");
 var bodyParser = require("body-parser");
 var cookieParser = require("cookie-parser");
 var expressSession = require("express-session");
+var csrf = require('csurf');
 var path = require('path');
 
 var passport = require('passport');
@@ -93,6 +94,7 @@ app.use(expressSession({
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(csrf());
 
 
 function verifyCredentials(username, password, done) {
@@ -141,7 +143,9 @@ app.get('/', function (req, res) {
 });
 
 app.get('/login', function (req, res) {
-    res.render('login');
+    res.render('login', {
+        csrf: req.csrfToken()
+    });
 });
 
 
