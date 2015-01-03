@@ -1,0 +1,7 @@
+#
+# Make a self signed cert for testing purposes only.
+#
+openssl genrsa -out test-key.pem 1024
+openssl req -new -key test-key.pem -out certrequest.csr
+openssl x509 -req -in certrequest.csr -signkey test-key.pem -out test-cert.pem
+

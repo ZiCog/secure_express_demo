@@ -14,6 +14,7 @@
 
 "use strict";
 
+var https = require('https');
 var express = require("express");
 var bodyParser = require("body-parser");
 var cookieParser = require("cookie-parser");
@@ -26,9 +27,22 @@ var passportHttp = require('passport-http');
 
 var helmet = require('helmet');
 
+var fs = require('fs');
+
+
 process.title = 'secure_express_demo';
 
+var hskey = fs.readFileSync('test-key.pem');
+var hscert = fs.readFileSync('test-cert.pem')
+
+var options = {
+    key:  hskey,
+    cert: hscert
+};
+
 var app = express();
+var server = https.createServer(options, app);
+
 
 // Implement Content Security Policy (CSP) with Helmet
 app.use(helmet.csp({
@@ -73,7 +87,7 @@ app.use(expressSession({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-//        secure:   true            // TODO: This stops our log in working, needs SSL ?
+        secure:   true            // This stops our log in working without SSL
     }
 }));
 
@@ -162,8 +176,8 @@ app.get('/api/logout', function (req, res) {
 
 var port = process.env.PORT || 1337;
 
-app.listen(port, function () {
-    console.log('http://127.0.0.1:' + port + '/');
+server.listen(port, function () {
+    console.log('https://127.0.0.1:' + port + '/');
 });
 
 
