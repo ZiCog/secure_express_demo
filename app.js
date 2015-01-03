@@ -8,8 +8,6 @@
 //     http://scottksmith.com/blog/2014/09/21/protect-your-node-apps-noggin-with-helmet/ 
 //
 
-// TODO: Continue with ssl enhancement as per 00:53:00 into the above video.
-// TODO: Protect against CSRF with csurf.
 // TODO: Use caja input sanitizer
 
 "use strict";
