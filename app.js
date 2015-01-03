@@ -31,8 +31,10 @@ var fs = require('fs');
 
 process.title = 'secure_express_demo';
 
+/*jslint stupid: true*/
 var hskey = fs.readFileSync('test-key.pem');
-var hscert = fs.readFileSync('test-cert.pem')
+var hscert = fs.readFileSync('test-cert.pem');
+/*jslint stupid: false*/
 
 var options = {
     key:  hskey,
@@ -129,7 +131,9 @@ function ensureAuthenticated(req, res, next) {
 }
 
 // Server static files from our public directory
+/*jslint nomen: true*/
 app.use(express.static(path.join(__dirname, 'public')));
+/*jslint nomen: false*/
 
 app.get('/', function (req, res) {
     // TODO: AN IMPORTANT DECISION LIKE isAuthenticated SHOULD NOT BE LEFT TO THE VIEW !
