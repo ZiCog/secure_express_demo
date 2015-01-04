@@ -28,6 +28,16 @@ var helmet = require('helmet');
 
 var fs = require('fs');
 
+var pw = require('credential');
+
+var newUsername = 'pi';
+var newPassword = 'pi';
+var storedHash;
+ 
+pw.hash(newPassword, function (err, hash) {
+    if (err) { throw err; }
+    storedHash = hash;
+});
 
 process.title = 'secure_express_demo';
 
@@ -100,12 +110,25 @@ app.use(csrf());
 function verifyCredentials(username, password, done) {
     // Pretend this is using a real database!
     console.log("Verifying user:", username, " Password:", password);
-    if (username === password) {
-        done(null, {id: username, name: username});
+    if (username === newUsername) {
+        pw.verify(storedHash, password, function (err, isValid) {
+            if (err) {
+                console.log ("Error verifying hash: ", err);
+                done(new Error('ouch!'));                     // Use if error in database or whatever.
+            } else {
+                if (isValid) {
+                    console.log ('Passwords match');
+                    done(null, {id: username, name: username});
+                } else {
+                    console.log ('Wrong password.');
+                    done(null, null);
+                }
+            }
+        });
+
     } else {
         done(null, null);
     }
-    // done(new Error('ouch!'); // Use if error in database or whatever.
 }
 
 passport.use(new passportLocal.Strategy(verifyCredentials));
