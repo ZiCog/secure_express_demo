@@ -32,12 +32,9 @@ var pw = require('credential');
 
 var newUsername = 'pi';
 var newPassword = 'pi';
+var newEmail;
 var storedHash;
  
-pw.hash(newPassword, function (err, hash) {
-    if (err) { throw err; }
-    storedHash = hash;
-});
 
 process.title = 'secure_express_demo';
 
@@ -167,12 +164,30 @@ app.get('/', function (req, res) {
     });
 });
 
+app.get('/register', function (req, res) {
+    res.render('register', {
+        csrf: req.csrfToken()
+    });
+});
+
+app.post('/register', function (req, res) {
+    console.log ("Register: ", req.body.email, req.body.username, req.body.password);
+    newUsername = req.body.username;
+    newPassword = req.body.password;
+    newEmail    = req.body.email;
+
+    pw.hash(newPassword, function (err, hash) {
+        if (err) { throw err; }
+        storedHash = hash;
+    });
+    res.redirect('/');
+});
+
 app.get('/login', function (req, res) {
     res.render('login', {
         csrf: req.csrfToken()
     });
 });
-
 
 app.post('/login', passport.authenticate('local'), function (req, res) {
     res.redirect('/');
