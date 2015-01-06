@@ -31,29 +31,37 @@
 
         <div class="container">
 
-            <form class="form-signin" action="" method="post">
-                <h2 class="form-signin-heading">Please register</h2>
+            <div class="page-header">
+            </div>
 
-                <label for="inputEmail" class="sr-only">Email address</label>
-                <input type="text" name="email" id="inputEmail" class="form-control" placeholder="email address" required autofocus>
+            <div class="panel panel-default">
+                <div class="panel-body">
 
-                <label for="inputUsername" class="sr-only">Email address</label>
-                <input type="text" name="username" id="inputUsername" class="form-control" placeholder="Username" required>
+                    <form class="form-signin" action="" method="post">
+                        <h2 class="form-signin-heading">Please register</h2>
 
-                <label for="inputPassword" class="sr-only">Password</label>
-                <input type="password" name="password" id="inputPassword" class="form-control" placeholder="Password" required>
+                        <label for="inputEmail" class="sr-only">Email address</label>
+                        <input type="text" name="email" id="inputEmail" class="form-control" placeholder="email address" required autofocus>
+                        <p>
+                        <p>
+                        <label for="inputUsername" class="sr-only">Email address</label>
+                        <input type="text" name="username" id="inputUsername" class="form-control" placeholder="Username" required>
+                        <p>
+                        <label for="inputPassword" class="sr-only">Password</label>
+                        <input type="password" name="password" id="inputPassword" class="form-control" placeholder="Password" required>
 
-                <input type="hidden", name="_csrf", value="<%= csrf %>">
+                        <input type="hidden", name="_csrf", value="<%= csrf %>">
 
-                <div class="checkbox">
-                    <label>
-                        <input type="checkbox" value="remember-me"> Remember me
-                    </label>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" value="remember-me"> Remember me
+                            </label>
+                        </div>
+
+                        <button class="btn btn-lg btn-primary btn-block" type="submit">Register</button>
+                    </form>
                 </div>
-
-                <button class="btn btn-lg btn-primary btn-block" type="submit">Register</button>
-            </form>
-
+            </div>
         </div> <!-- /container -->
 
         <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
