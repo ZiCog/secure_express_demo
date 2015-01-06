@@ -19,8 +19,8 @@ var UserStore = function (init) {
                 }
                 console.log('Index', index, 'ready.');
                 console.log("Table and index are available...");
-                setupCallback();
                 connection.close();
+                setupCallback();
             });
         },
 
@@ -76,6 +76,7 @@ var UserStore = function (init) {
                         createDatabase();
                     } else {
                         console.log("Table and index are available...");
+                        connection.close();
                         setupCallback();
                     }
                 });
