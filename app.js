@@ -33,7 +33,7 @@ var pw = require('credential');
 var newUsername = 'pi';
 var newPassword = 'pi';
 var newEmail;
-var storedHash;
+var storedHash = "";
  
 
 process.title = 'secure_express_demo';
@@ -111,7 +111,8 @@ function verifyCredentials(username, password, done) {
         pw.verify(storedHash, password, function (err, isValid) {
             if (err) {
                 console.log ("Error verifying hash: ", err);
-                done(new Error('ouch!'));                     // Use if error in database or whatever.
+                done(null, null);
+                //done(new Error('ouch!'));                     // Use if error in database or whatever.
             } else {
                 if (isValid) {
                     console.log ('Passwords match');
