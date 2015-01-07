@@ -4,8 +4,9 @@ var makeUserStore = function (init) {
     var that = {},
 
         r = require('rethinkdb'),
+        database = {host: 'localhost', port: 28015, authKey: "", db: "users"},
         connection = null,
-        db = "users",
+        db = database.db,
         table = "users",
         index = "username",
         setupCallback,
@@ -61,7 +62,7 @@ var makeUserStore = function (init) {
 
         setUp = function (callback) {
             setupCallback = callback;
-            r.connect({host: 'localhost', port: 28015, authKey: "", db: db}, function (err, conn) {
+            r.connect(database, function (err, conn) {
                 if (err) {
                     console.log("Could not open a connection to initialize the database");
                     console.log(err.message);
@@ -83,7 +84,7 @@ var makeUserStore = function (init) {
         },
 
         put = function (user, callback) {
-            r.connect({host: 'localhost', port: 28015, authKey: "", db: db}, function (err, conn) {
+            r.connect(database, function (err, conn) {
                 if (err) {
                     console.log("Could not open a connection to put user");
                     console.log(err.message);
@@ -117,7 +118,7 @@ var makeUserStore = function (init) {
 
         get = function (username, callback) {
             console.log ("user.get:", username);
-            r.connect({host: 'localhost', port: 28015, authKey: "", db: db}, function (err, conn) {
+            r.connect(database, function (err, conn) {
                 if (err) {
                     console.log("Could not open a connection to get user");
                     console.log(err.message);
