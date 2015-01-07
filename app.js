@@ -92,8 +92,9 @@ app.use(expressSession({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        httpOnly: true,
-        secure:   true            // This stops our log in working without SSL
+        maxAge:  3600000,     // 1 Hour
+        httpOnly:   true,
+        secure:     true      // This stops our log in working without SSL
     }
 }));
 
