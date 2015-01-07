@@ -34,12 +34,6 @@ var makeUserStore = require("./user_store.js");
 var users = makeUserStore.makeUserStore();
 
 
-var newUsername = 'pi';
-var newPassword = 'pi';
-var newEmail;
-var storedHash = "";
- 
-
 process.title = 'secure_express_demo';
 
 /*jslint stupid: true*/
@@ -178,9 +172,6 @@ app.get('/register', function (req, res) {
 
 app.post('/register', function (req, res) {
     console.log ("Register: ", req.body.email, req.body.username, req.body.password);
-    newUsername = req.body.username;
-    newPassword = req.body.password;
-    newEmail    = req.body.email;
 
     pw.hash(newPassword, function (err, hash) {
         if (err) { throw err; }
@@ -212,6 +203,12 @@ app.post('/login', passport.authenticate('local'), function (req, res) {
 app.get('/logout', function (req, res) {
     req.logout();
     res.redirect('/');
+});
+
+app.get('/spa', ensureAuthenticated, function (req, res) {
+    res.render('spa', {
+        csrf: req.csrfToken()
+    });
 });
 
 app.use('/api', passport.authenticate('basic', { session: false }));
