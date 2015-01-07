@@ -139,7 +139,7 @@ var makeUserStore = function (init) {
                                         // Send back the data
                                         callback ("Crappy error", null);
                                     } else {
-                                        callback (null, result);
+                                        callback (null, result[0]);
                                     }
                                 }
                             });

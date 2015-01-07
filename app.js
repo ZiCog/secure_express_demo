@@ -109,7 +109,7 @@ function verifyCredentials(username, password, done) {
             done(null, null);
         } else {
             console.log("Found user", user.username);
-            pw.verify(user[0].passwordHash, password, function (err, isValid) {
+            pw.verify(user.passwordHash, password, function (err, isValid) {
                 if (err) {
                     console.log ("Error verifying hash: ", err);
                     done(null, null);
