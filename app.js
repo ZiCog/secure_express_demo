@@ -30,6 +30,10 @@ var fs = require('fs');
 
 var pw = require('credential');
 
+var makeUserStore = require("./user_store.js");
+var users = makeUserStore.makeUserStore();
+
+
 var newUsername = 'pi';
 var newPassword = 'pi';
 var newEmail;
@@ -103,30 +107,32 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(csrf());
 
-
 function verifyCredentials(username, password, done) {
     // Pretend this is using a real database!
     console.log("Verifying user:", username, " Password:", password);
-    if (username === newUsername) {
-        pw.verify(storedHash, password, function (err, isValid) {
-            if (err) {
-                console.log ("Error verifying hash: ", err);
-                done(null, null);
-                //done(new Error('ouch!'));                     // Use if error in database or whatever.
-            } else {
-                if (isValid) {
-                    console.log ('Passwords match');
-                    done(null, {id: username, name: username});
-                } else {
-                    console.log ('Wrong password.');
+    users.get(username, function (err, user) {
+        if (err) {
+            console.log("Error looking up user");
+            done(null, null);
+        } else {
+            console.log("Found user", user.username);
+            pw.verify(user[0].passwordHash, password, function (err, isValid) {
+                if (err) {
+                    console.log ("Error verifying hash: ", err);
                     done(null, null);
+                    //done(new Error('ouch!'));                     // Use if error in database or whatever.
+                } else {
+                    if (isValid) {
+                        console.log ('Passwords match');
+                        done(null, {id: username, name: username});
+                    } else {
+                        console.log ('Wrong password.');
+                        done(null, null);
+                    }
                 }
-            }
-        });
-
-    } else {
-        done(null, null);
-    }
+            });
+        }
+    });
 }
 
 passport.use(new passportLocal.Strategy(verifyCredentials));
@@ -142,8 +148,8 @@ passport.deserializeUser(function (id, done) {
     done(null, { id: id, name: id });
 });
 
-
 function ensureAuthenticated(req, res, next) {
+    console.log("ensureAuhenticated:");
     if (req.isAuthenticated()) {
         next();
     } else {
@@ -180,6 +186,15 @@ app.post('/register', function (req, res) {
     pw.hash(newPassword, function (err, hash) {
         if (err) { throw err; }
         storedHash = hash;
+        var user = {};
+        user.username = req.body.username;
+        user.passwordHash = hash;
+        user.email = req.body.email;
+        users.put(user, function (err) {
+            if (err) {
+                console.log ("user.put failed");
+            }
+        });
     });
     res.redirect('/');
 });
@@ -221,8 +236,11 @@ app.get('/api/logout', function (req, res) {
 
 var port = process.env.PORT || 1337;
 
-server.listen(port, function () {
-    console.log('https://127.0.0.1:' + port + '/');
+users.setUp(function () {
+    console.log("users set up done");
+    server.listen(port, function () {
+        console.log('https://127.0.0.1:' + port + '/');
+    });
 });
 
 
