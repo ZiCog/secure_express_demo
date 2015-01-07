@@ -108,7 +108,6 @@ app.use(passport.session());
 app.use(csrf());
 
 function verifyCredentials(username, password, done) {
-    // Pretend this is using a real database!
     console.log("Verifying user:", username, " Password:", password);
     users.get(username, function (err, user) {
         if (err) {
