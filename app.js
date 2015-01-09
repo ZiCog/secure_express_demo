@@ -174,9 +174,8 @@ app.get('/register', function (req, res) {
 app.post('/register', function (req, res) {
     console.log ("Register: ", req.body.email, req.body.username, req.body.password);
 
-    pw.hash(newPassword, function (err, hash) {
+    pw.hash(req.body.password, function (err, hash) {
         if (err) { throw err; }
-        storedHash = hash;
         var user = {};
         user.username = req.body.username;
         user.passwordHash = hash;
