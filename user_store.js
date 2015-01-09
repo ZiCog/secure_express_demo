@@ -8,13 +8,11 @@ var makeUserStore = function (init) {
     var that = {},
 
         database = {host: 'localhost', port: 28015, authKey: "", db: "users"},
-        connection = null,
         db = database.db,
         table = "users",
         index = "username",
-        setupCallback,
 
-        createDatabase = function () {
+        createDatabase = function (connection, callback) {
             async.series([
                 // Create users database
                 function(callback){
@@ -73,46 +71,63 @@ var makeUserStore = function (init) {
             // 
             function(err, results){
                 console.log(results);
-                setupCallback();
+                callback(null, null);
             });
         },
 
         setUp = function (callback) {
-            setupCallback = callback;
-            r.connect(database, function (err, conn) {
-                if (err) {
-                    console.log("Could not open a connection to initialize the database");
-                    console.log(err.message);
-                    process.exit(1);
+            var connection;
+            async.series([
+                function(callback){
+                    r.connect(database, function (err, conn) {
+                        if (err) {
+                            console.log("Could not open a connection to initialize the database");
+                            console.log(err.message);
+                            process.exit(1);
+                        }
+                        connection = conn;
+                        callback(null, 'one');
+                    });
+                },
+                function(callback){
+                    r.table(table).indexWait(index).run(connection, function (err, result) {
+                        if (err) {
+                            // The database/table/index was not available, create them
+                            console.log("No such table");
+                            createDatabase(connection, function (err, result) {
+                                callback(null, 'two');
+                            });
+                        } else {
+                            console.log("Table and index are available...");
+                            callback(null, 'two');
+                        }
+                    });
+                },
+                // Close database conection
+                function(callback){
+                    connection.close();
+                    callback(null, 'three');
                 }
-                connection = conn;
-                r.table(table).indexWait(index).run(conn, function (err, result) {
-                    if (err) {
-                        // The database/table/index was not available, create them
-                        console.log("No such table");
-                        createDatabase();
-                    } else {
-                        console.log("Table and index are available...");
-//                        connection.close();
-                        setupCallback();
-                    }
-                });
+            ],
+            // 
+            function(err, results){
+                console.log(results);
+                callback(null, null);
             });
         },
 
         put = function (user, callback) {
             var connection;
             async.series([
-                function (callback) {
+                function(callback){
                     r.connect(database, function (err, conn) {
                         if (err) {
-                            console.log("Could not open a connection to put user");
+                            console.log("Could not open a connection to initialize the database");
                             console.log(err.message);
                             process.exit(1);
-                        } else {
-                            connection = conn;
-                            callback(null, 'one');
-                        }              
+                        }
+                        connection = conn;
+                        callback(null, 'one');
                     });
                 },
                 function (callback) {
