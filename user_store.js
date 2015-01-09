@@ -101,71 +101,116 @@ var makeUserStore = function (init) {
         },
 
         put = function (user, callback) {
-            r.connect(database, function (err, conn) {
-                if (err) {
-                    console.log("Could not open a connection to put user");
-                    console.log(err.message);
-                    process.exit(1);
-                } else {
-                    r.table(table).getAll(user.username, {index: index}).isEmpty().run(conn, function (error, result) {
+            var connection;
+            async.series([
+                function (callback) {
+                    r.connect(database, function (err, conn) {
+                        if (err) {
+                            console.log("Could not open a connection to put user");
+                            console.log(err.message);
+                            process.exit(1);
+                        } else {
+                            connection = conn;
+                            callback(null, 'one');
+                        }              
+                    });
+                },
+                function (callback) {
+                    r.table(table).getAll(user.username, {index: index}).isEmpty().run(connection, function (error, result) {
                         if (error) {
                             console.log ("User isEmpty failed"); 
+                            process.exit(1);
                         } else {
                             if (result === true) {
-                                console.log ("Inserting new user");
-                                r.table(table).insert(user, {returnChanges: true}).run(conn, function(error, result) {
-                                    if (error) {
-                                        console.log ("User insert failed 1"); 
-                                    } else if (result.inserted !== 1) {
-                                        console.log ("User insert failed 2");
-                                    } else {
-                                        console.log("User insert OK");
-                                    }
-                                });
+                                callback(null, 'two');
                             } else {
-                                console.log ("Username in use!"); 
-                            }
+                                console.log ("Username in use!");
+                                process.exit(1);
+                            } 
                         }
                     });
-  
+                },
+                function (callback) {
+                    console.log ("Inserting new user");
+                    r.table(table).insert(user, {returnChanges: true}).run(connection, function(error, result) {
+                        if (error) {
+                            console.log ("User insert failed 1"); 
+                            process.exit(1);
+                        } else if (result.inserted !== 1) {
+                            console.log ("User insert failed 2");
+                            process.exit(1);
+                        } else {
+                            console.log("User insert OK");
+                            callback(null, 'three');
+                        }
+                    });
+                },
+                // Close database conection
+                function(callback){
+                    connection.close();
+                    callback(null, 'four');
                 }
+            ],
+            // 
+            function(err, results){
+                console.log(results);
             });
-           // TODO: close the connection here somewhere !
         },
 
         get = function (username, callback) {
             console.log ("user.get:", username);
-            r.connect(database, function (err, conn) {
-                if (err) {
-                    console.log("Could not open a connection to get user");
-                    console.log(err.message);
-                    process.exit(1);
-                } else {
-                    r.table("users").getAll(username, {index: "username"}).run(conn, function(error, cursor) {
+            var connection;
+            var cur
+            async.series([
+                function (callback) {
+                    r.connect(database, function (err, conn) {
+                        if (err) {
+                            console.log("Could not open a connection to get user");
+                            console.log(err.message);
+                            process.exit(1);
+                        } else {
+                            connection = conn;
+                            callback(null, 'one');
+                        }
+                    });
+                },
+                function (callback) {
+                    r.table("users").getAll(username, {index: "username"}).run(connection, function(error, cursor) {
                         if (error) {
                             console.log ("User get failed 1");
                             callback(error, null);
                         } else {
                             console.log("User get OK");
-                            cursor.toArray(function(error, result) {
-                                if (error) {
-                                    console.log("cursor to array failed"); 
-                                    callback(error, null);
-                                }
-                                else {
-                                    if (result.length != 1) {
-                                        // Send back the data
-                                        callback ("Crappy error", null);
-                                    } else {
-                                        callback (null, result[0]);
-                                    }
-                                }
-                            });
+                            cur = cursor;
+                            callback(null, 'two');
+                        }
+                    });
+                },
+                function (callback) {
+                    cur.toArray(function(error, result) {
+                        if (error) {
+                            console.log("cursor to array failed"); 
+                            callback(error, null);
+                        } else {
+                            if (result.length != 1) {
+                                // Send back the data
+                                callback ("Crappy error", null);
+                            } else {
+                                callback (null, result[0]);
+                            }
                         }
                     });
                 }
+            ],
+            // 
+            function(err, results){
+                if (err) {
+                    callback(err, null);
+                } else {
+                    console.log(results);
+                    callback(null, results[2]);
+                }
             });
-            // TODO: close the connection here somewhere !
         },
 
         close = function () {
