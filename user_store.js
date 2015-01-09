@@ -205,8 +205,7 @@ var makeUserStore = function (init) {
                             console.log("cursor to array failed"); 
                             callback(error, null);
                         } else if (result.length != 1) {
-                            // Send back the data
-                            callback ("Crappy error", null);
+                            callback (null, null);
                         } else {
                             callback (null, result[0]);
                         }

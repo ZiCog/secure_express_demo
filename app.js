@@ -33,6 +33,7 @@ var pw = require('credential');
 var makeUserStore = require("./user_store.js");
 var users = makeUserStore.makeUserStore();
 
+var async = require("async");
 
 process.title = 'secure_express_demo';
 
@@ -104,27 +105,44 @@ app.use(csrf());
 
 function verifyCredentials(username, password, done) {
     console.log("Verifying user:", username, " Password:", password);
-    users.get(username, function (err, user) {
-        if (err) {
-            console.log("Error looking up user");
-            done(null, null);
-        } else {
-            console.log("Found user", user.username);
-            pw.verify(user.passwordHash, password, function (err, isValid) {
+    var foundUser;
+    async.series ([
+        function(callback) {
+            users.get(username, function (err, user) {
                 if (err) {
-                    console.log ("Error verifying hash: ", err);
-                    done(null, null);
-                    //done(new Error('ouch!'));                     // Use if error in database or whatever.
+                    console.log("Error looking up user");
+                    callback(err, null);
+                } else if (user) {
+                    console.log("Found user", user.username);
+                    foundUser = user;
+                    callback(null, "one");
                 } else {
-                    if (isValid) {
-                        console.log ('Passwords match');
-                        done(null, {id: username, name: username});
-                    } else {
-                        console.log ('Wrong password.');
-                        done(null, null);
-                    }
+                    callback(null, null);
                 }
             });
+        },
+        function(callback) {
+            pw.verify(foundUser.passwordHash, password, function (err, isValid) {
+                if (err) {
+                    console.log ("Error verifying hash: ", err);
+                    callback(err, null);
+                    //done(new Error('ouch!'));         // Use if error in database or whatever.
+                } else if (isValid) {
+                    console.log ('Passwords match');
+                    callback(null, {id: username, name: username});
+                } else {
+                    console.log ('Wrong password.');
+                    callback(new Error('Incorrect password', null));
+                }
+            });
+        }
+    ],
+    function(err, results) {
+        console.log(results);
+        if (err) {
+            done(err, null);
+        } else {
+            done(null, {id: username, name: username});
         }
     });
 }
