@@ -135,13 +135,11 @@ var makeUserStore = function (init) {
                         if (error) {
                             console.log ("User isEmpty failed"); 
                             process.exit(1);
+                        } else if (result === true) {
+                            callback(null, 'two');
                         } else {
-                            if (result === true) {
-                                callback(null, 'two');
-                            } else {
-                                console.log ("Username in use!");
-                                process.exit(1);
-                            } 
+                            console.log ("Username in use!");
+                            process.exit(1);
                         }
                     });
                 },
@@ -206,13 +204,11 @@ var makeUserStore = function (init) {
                         if (error) {
                             console.log("cursor to array failed"); 
                             callback(error, null);
+                        } else if (result.length != 1) {
+                            // Send back the data
+                            callback ("Crappy error", null);
                         } else {
-                            if (result.length != 1) {
-                                // Send back the data
-                                callback ("Crappy error", null);
-                            } else {
-                                callback (null, result[0]);
-                            }
+                            callback (null, result[0]);
                         }
                     });
                 },
