@@ -200,6 +200,11 @@ var makeUserStore = function (init) {
                             }
                         }
                     });
+                },
+                // Close database conection
+                function(callback){
+                    connection.close();
+                    callback(null, 'four');
                 }
             ],
             // 
