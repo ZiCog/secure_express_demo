@@ -1,9 +1,12 @@
 "use strict";
 
+
+var r = require('rethinkdb');
+var async = require('async');
+
 var makeUserStore = function (init) {
     var that = {},
 
-        r = require('rethinkdb'),
         database = {host: 'localhost', port: 28015, authKey: "", db: "users"},
         connection = null,
         db = database.db,
@@ -11,52 +14,66 @@ var makeUserStore = function (init) {
         index = "username",
         setupCallback,
 
-        waitForIndex = function () {
-            r.table(table).indexWait(index).run(connection, function (err, result) {
-                if (err) {
-                    console.log("Could not wait for the completion of the index",  index);
-                    console.log(err);
-                    process.exit(1);
-                }
-                console.log("Table and index are available...");
-//                connection.close();
-                setupCallback();
-            });
-        },
-
-        createIndex = function () {
-            r.table(table).indexCreate(index).run(connection, function (err, result) {
-                if (err && (!err.message.match(/Index `.*` already exists/))) {
-                    console.log("Could not create the index", index);
-                    console.log(err);
-                    process.exit(1);
-                }
-                console.log('Index', index, 'created.');
-                waitForIndex();
-            });
-        },
-
-        createTable = function () {
-            r.tableCreate(table).run(connection, function (err, result) {
-                if (err && (!err.message.match(/Table `.*` already exists/))) {
-                    console.log("Could not create the table", table);
-                    console.log(err);
-                    process.exit(1);
-                }
-                console.log('Table', table, 'created.');
-                createIndex();
-            });
-        },
-
         createDatabase = function () {
-            r.dbCreate(db).run(connection, function (err, result) {
-                if (err && (!err.message.match(/Database `.*` already exists/))) {
-                    console.log("Could not create the database `" + db + "`");
-                    console.log(err);
-                    process.exit(1);
+            async.series([
+                // Create users database
+                function(callback){
+                    r.dbCreate(db).run(connection, function (err, result) {
+                        if (err && (!err.message.match(/Database `.*` already exists/))) {
+                            console.log("Could not create the database `" + db + "`");
+                            console.log(err);
+                            process.exit(1);
+                        }
+                        console.log('Database', db, 'created.');
+                        callback(null, 'one');
+                    });
+                },
+                // Create users table
+                function(callback){
+                    r.tableCreate(table).run(connection, function (err, result) {
+                        if (err && (!err.message.match(/Table `.*` already exists/))) {
+                            console.log("Could not create the table", table);
+                            console.log(err);
+                            process.exit(1);
+                        }
+                        console.log('Table', table, 'created.');
+                        callback(null, 'two');
+                    });
+                },
+                // Index the users table
+                function(callback){
+                    r.table(table).indexCreate(index).run(connection, function (err, result) {
+                        if (err && (!err.message.match(/Index `.*` already exists/))) {
+                            console.log("Could not create the index", index);
+                            console.log(err);
+                            process.exit(1);
+                        }
+                        console.log('Index', index, 'created.');
+                        callback(null, 'three');
+                    });
+                },
+                // Wait for index completion
+                function(callback){
+                    r.table(table).indexWait(index).run(connection, function (err, result) {
+                        if (err) {
+                            console.log("Could not wait for the completion of the index",  index);
+                            console.log(err);
+                            process.exit(1);
+                        }
+                        console.log("Table and index are available...");
+                        callback(null, 'four');
+                    });
+                },
+                // Close database conection
+                function(callback){
+                    connection.close();
+                    callback(null, 'five');
                 }
-                console.log('Database', db, 'created.');
-                createTable();
+            ],
+            // 
+            function(err, results){
+                console.log(results);
+                setupCallback();
             });
         },
 
