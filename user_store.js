@@ -122,7 +122,6 @@ var makeUserStore = function (init) {
                     if (err) {
                         callback(err);
                     } else {
-                        console.log(results);
                         callback(null);
                     }
                 });
