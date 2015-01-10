@@ -106,10 +106,11 @@ app.use(csrf());
 function verifyCredentials(username, password, done) {
     console.log("Verifying user:", username, " Password:", password);
     var foundUser;
-    async.series ([
-        function(callback) {
+    async.series([
+        function (callback) {
             users.get(username, function (err, user) {
                 if (err) {
+                    console.log("Error finding");
                     callback(err);
                 } else if (user) {
                     console.log("Found user", user.username);
@@ -120,28 +121,28 @@ function verifyCredentials(username, password, done) {
                 }
             });
         },
-        function(callback) {
+        function (callback) {
             pw.verify(foundUser.passwordHash, password, function (err, isValid) {
                 if (err) {
                     callback(err);
                 } else if (isValid) {
-                    console.log ('Passwords match');
+                    console.log('Passwords match');
                     callback(null, {id: username, name: username});
                 } else {
-                    console.log ('Wrong password.');
+                    console.log('Wrong password.');
                     callback(new Error('Incorrect password', null));
                 }
             });
         }
     ],
-    function(err, results) {
-        console.log(results);
-        if (err) {
-            done (null, false);
-        } else {
-            done(null, {id: username, name: username});
-        }
-    });
+        function (err, results) {
+            console.log(results);
+            if (err) {
+                done(null, false);
+            } else {
+                done(null, {id: username, name: username});
+            }
+        });
 }
 
 passport.use(new passportLocal.Strategy(verifyCredentials));
