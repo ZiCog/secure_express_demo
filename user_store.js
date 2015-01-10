@@ -14,64 +14,63 @@ var makeUserStore = function (init) {
 
         createDatabase = function (connection, callback) {
             async.series([
-                // Create users database
+                // Create database
                 function(callback){
                     r.dbCreate(db).run(connection, function (err, result) {
                         if (err && (!err.message.match(/Database `.*` already exists/))) {
-                            console.log("Could not create the database `" + db + "`");
-                            console.log(err);
-                            process.exit(1);
+                            callback(err);
+                        } else {
+                            console.log('Database', db, 'created.');
+                            callback(null);
                         }
-                        console.log('Database', db, 'created.');
-                        callback(null, 'one');
                     });
                 },
-                // Create users table
+                // Create table
                 function(callback){
                     r.tableCreate(table).run(connection, function (err, result) {
                         if (err && (!err.message.match(/Table `.*` already exists/))) {
-                            console.log("Could not create the table", table);
-                            console.log(err);
-                            process.exit(1);
+                            callback(err);
+                        } else {
+                            console.log('Table', table, 'created.');
+                            callback(null);
                         }
-                        console.log('Table', table, 'created.');
-                        callback(null, 'two');
                     });
                 },
-                // Index the users table
+                // Create index 
                 function(callback){
                     r.table(table).indexCreate(index).run(connection, function (err, result) {
                         if (err && (!err.message.match(/Index `.*` already exists/))) {
-                            console.log("Could not create the index", index);
-                            console.log(err);
-                            process.exit(1);
+                            callback(err);
+                        } else {
+                            console.log('Index', index, 'created.');
+                            callback(null);
                         }
-                        console.log('Index', index, 'created.');
-                        callback(null, 'three');
                     });
                 },
                 // Wait for index completion
                 function(callback){
                     r.table(table).indexWait(index).run(connection, function (err, result) {
                         if (err) {
-                            console.log("Could not wait for the completion of the index",  index);
-                            console.log(err);
-                            process.exit(1);
+                            callback(null);
+                        } else {
+                            console.log("Table and index are available...");
+                            callback(null);
                         }
-                        console.log("Table and index are available...");
-                        callback(null, 'four');
                     });
                 },
                 // Close database conection
                 function(callback){
                     connection.close();
-                    callback(null, 'five');
+                    callback(null);
                 }
             ],
             // 
-            function(err, results){
-                console.log(results);
-                callback(null, null);
+            function(err, results) {
+                if (err) {
+                    callback(err);
+                } else {
+                    callback(null);
+                }
             });
         },
 
@@ -81,38 +80,43 @@ var makeUserStore = function (init) {
                 function(callback){
                     r.connect(database, function (err, conn) {
                         if (err) {
-                            console.log("Could not open a connection to initialize the database");
-                            console.log(err.message);
-                            process.exit(1);
+                            console.log("Connect failed");
+                            callback(err);
+                        } else {
+                            connection = conn;
+                            callback(null);
                         }
-                        connection = conn;
-                        callback(null, 'one');
                     });
                 },
                 function(callback){
                     r.table(table).indexWait(index).run(connection, function (err, result) {
                         if (err) {
                             // The database/table/index was not available, create them
-                            console.log("No such table");
                             createDatabase(connection, function (err, result) {
-                                callback(null, 'two');
+                                if (err) {
+                                    callback(err);
+                                } else {
+                                    callback(null);
+                                }
                             });
                         } else {
-                            console.log("Table and index are available...");
-                            callback(null, 'two');
+                            callback(null);
                         }
                     });
                 },
                 // Close database conection
                 function(callback){
                     connection.close();
-                    callback(null, 'three');
+                    callback(null);
                 }
             ],
             // 
             function(err, results){
-                console.log(results);
-                callback(null, null);
+                if (err) {
+                    callback(err)
+                } else {
+                    callback(null, null);
+                }
             });
         },
 
@@ -122,90 +126,81 @@ var makeUserStore = function (init) {
                 function(callback){
                     r.connect(database, function (err, conn) {
                         if (err) {
-                            console.log("Could not open a connection to initialize the database");
-                            console.log(err.message);
-                            process.exit(1);
+                            callback(err);
                         }
                         connection = conn;
-                        callback(null, 'one');
+                        callback(null);
                     });
                 },
                 function (callback) {
-                    r.table(table).getAll(user.username, {index: index}).isEmpty().run(connection, function (error, result) {
-                        if (error) {
-                            console.log ("User isEmpty failed"); 
-                            process.exit(1);
+                    r.table(table).getAll(user.username, {index: index}).isEmpty().run(connection, function (err, result) {
+                        if (err) {
+                            callback(err);
                         } else if (result === true) {
-                            callback(null, 'two');
+                            callback(null);
                         } else {
-                            console.log ("Username in use!");
-                            process.exit(1);
+                            callback(new Error("User name in use: " + user.username));
                         }
                     });
                 },
                 function (callback) {
-                    console.log ("Inserting new user");
-                    r.table(table).insert(user, {returnChanges: true}).run(connection, function(error, result) {
-                        if (error) {
-                            console.log ("User insert failed 1"); 
-                            process.exit(1);
+                    r.table(table).insert(user, {returnChanges: true}).run(connection, function(err, result) {
+                        if (err) {
+                            callback(err);
                         } else if (result.inserted !== 1) {
-                            console.log ("User insert failed 2");
-                            process.exit(1);
+                            callback(new Error ("User insert failed"));
                         } else {
-                            console.log("User insert OK");
-                            callback(null, 'three');
+                            callback(null);
                         }
                     });
                 },
                 // Close database conection
                 function(callback){
                     connection.close();
-                    callback(null, 'four');
+                    callback(null);
                 }
             ],
             // 
             function(err, results){
-                console.log(results);
+                if (err) {
+                    callback(err);
+                } else {
+                    console.log(results);
+                    callback(null, results);
+                }
             });
         },
 
         get = function (username, callback) {
-            console.log ("user.get:", username);
             var connection;
             var cur
             async.series([
                 function (callback) {
                     r.connect(database, function (err, conn) {
                         if (err) {
-                            console.log("Could not open a connection to get user");
-                            console.log(err.message);
-                            process.exit(1);
+                            callback(err);
                         } else {
                             connection = conn;
-                            callback(null, 'one');
+                            callback(null);
                         }
                     });
                 },
                 function (callback) {
-                    r.table("users").getAll(username, {index: "username"}).run(connection, function(error, cursor) {
-                        if (error) {
-                            console.log ("User get failed 1");
-                            callback(error, null);
+                    r.table("users").getAll(username, {index: "username"}).run(connection, function(err, cursor) {
+                        if (err) {
+                            callback(err);
                         } else {
-                            console.log("User get OK");
                             cur = cursor;
-                            callback(null, 'two');
+                            callback(null);
                         }
                     });
                 },
                 function (callback) {
-                    cur.toArray(function(error, result) {
-                        if (error) {
-                            console.log("cursor to array failed"); 
-                            callback(error, null);
-                        } else if (result.length != 1) {
-                            callback (null, null);
+                    cur.toArray(function(err, result) {
+                        if (err) {
+                            callback(err);
+                        } else if (result.length > 1) {
+                            callback (new Error("Duplicate found:", username));
                         } else {
                             callback (null, result[0]);
                         }
@@ -214,15 +209,14 @@ var makeUserStore = function (init) {
                 // Close database conection
                 function(callback){
                     connection.close();
-                    callback(null, 'four');
+                    callback(null);
                 }
             ],
             // 
             function(err, results){
                 if (err) {
-                    callback(err, null);
+                    callback(err);
                 } else {
-                    console.log(results);
                     callback(null, results[2]);
                 }
             });

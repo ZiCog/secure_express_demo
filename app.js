@@ -110,23 +110,20 @@ function verifyCredentials(username, password, done) {
         function(callback) {
             users.get(username, function (err, user) {
                 if (err) {
-                    console.log("Error looking up user");
-                    callback(err, null);
+                    callback(err);
                 } else if (user) {
                     console.log("Found user", user.username);
                     foundUser = user;
-                    callback(null, "one");
+                    callback(null);
                 } else {
-                    callback(null, null);
+                    callback(new Error("User not found"));
                 }
             });
         },
         function(callback) {
             pw.verify(foundUser.passwordHash, password, function (err, isValid) {
                 if (err) {
-                    console.log ("Error verifying hash: ", err);
-                    callback(err, null);
-                    //done(new Error('ouch!'));         // Use if error in database or whatever.
+                    callback(err);
                 } else if (isValid) {
                     console.log ('Passwords match');
                     callback(null, {id: username, name: username});
@@ -140,7 +137,7 @@ function verifyCredentials(username, password, done) {
     function(err, results) {
         console.log(results);
         if (err) {
-            done(err, null);
+            done (null, false);
         } else {
             done(null, {id: username, name: username});
         }
@@ -200,7 +197,7 @@ app.post('/register', function (req, res) {
         user.email = req.body.email;
         users.put(user, function (err) {
             if (err) {
-                console.log ("user.put failed");
+                console.log ("user.put failed", err);
             }
         });
     });
@@ -250,11 +247,17 @@ app.get('/api/logout', function (req, res) {
 
 var port = process.env.PORT || 1337;
 
-users.setUp(function () {
-    console.log("users set up done");
-    server.listen(port, function () {
-        console.log('https://127.0.0.1:' + port + '/');
-    });
+
+users.setUp(function (err, result) {
+    if (err) {
+        console.log("Users setup failed");
+    } else {
+        console.log("Users set up done");
+        server.listen(port, function () {
+            console.log('https://127.0.0.1:' + port + '/');
+
+        });
+    }
 });
 
 
