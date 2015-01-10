@@ -1,6 +1,5 @@
 "use strict";
 
-
 var r = require('rethinkdb');
 var async = require('async');
 
@@ -15,9 +14,9 @@ var makeUserStore = function (init) {
         createDatabase = function (connection, callback) {
             async.series([
                 // Create database
-                function(callback){
+                function (callback) {
                     r.dbCreate(db).run(connection, function (err, result) {
-                        if (err && (!err.message.match(/Database `.*` already exists/))) {
+                        if (err && (!err.message.match(/Database `[a-z,0-9]*` already exists/))) {
                             callback(err);
                         } else {
                             console.log('Database', db, 'created.');
@@ -26,9 +25,9 @@ var makeUserStore = function (init) {
                     });
                 },
                 // Create table
-                function(callback){
+                function (callback) {
                     r.tableCreate(table).run(connection, function (err, result) {
-                        if (err && (!err.message.match(/Table `.*` already exists/))) {
+                        if (err && (!err.message.match(/Table `[a-z,0-9]*` already exists/))) {
                             callback(err);
                         } else {
                             console.log('Table', table, 'created.');
@@ -37,9 +36,9 @@ var makeUserStore = function (init) {
                     });
                 },
                 // Create index 
-                function(callback){
+                function (callback) {
                     r.table(table).indexCreate(index).run(connection, function (err, result) {
-                        if (err && (!err.message.match(/Index `.*` already exists/))) {
+                        if (err && (!err.message.match(/Index `[a-z,0-9]*` already exists/))) {
                             callback(err);
                         } else {
                             console.log('Index', index, 'created.');
@@ -48,10 +47,10 @@ var makeUserStore = function (init) {
                     });
                 },
                 // Wait for index completion
-                function(callback){
+                function (callback) {
                     r.table(table).indexWait(index).run(connection, function (err, result) {
                         if (err) {
-                            callback(null);
+                            callback(err);
                         } else {
                             console.log("Table and index are available...");
                             callback(null);
@@ -59,25 +58,24 @@ var makeUserStore = function (init) {
                     });
                 },
                 // Close database conection
-                function(callback){
+                function (callback) {
                     connection.close();
                     callback(null);
                 }
             ],
-            // 
-            function(err, results) {
-                if (err) {
-                    callback(err);
-                } else {
-                    callback(null);
-                }
-            });
+                function (err, results) {
+                    if (err) {
+                        callback(err);
+                    } else {
+                        callback(null);
+                    }
+                });
         },
 
         setUp = function (callback) {
             var connection;
             async.series([
-                function(callback){
+                function (callback) {
                     r.connect(database, function (err, conn) {
                         if (err) {
                             console.log("Connect failed");
@@ -88,7 +86,7 @@ var makeUserStore = function (init) {
                         }
                     });
                 },
-                function(callback){
+                function (callback) {
                     r.table(table).indexWait(index).run(connection, function (err, result) {
                         if (err) {
                             // The database/table/index was not available, create them
@@ -105,31 +103,32 @@ var makeUserStore = function (init) {
                     });
                 },
                 // Close database conection
-                function(callback){
+                function (callback) {
                     connection.close();
                     callback(null);
                 }
             ],
             // 
-            function(err, results){
-                if (err) {
-                    callback(err)
-                } else {
-                    callback(null, null);
-                }
-            });
+                function (err, results) {
+                    if (err) {
+                        callback(err);
+                    } else {
+                        callback(null, null);
+                    }
+                });
         },
 
         put = function (user, callback) {
             var connection;
             async.series([
-                function(callback){
+                function (callback) {
                     r.connect(database, function (err, conn) {
                         if (err) {
                             callback(err);
+                        } else {
+                            connection = conn;
+                            callback(null);
                         }
-                        connection = conn;
-                        callback(null);
                     });
                 },
                 function (callback) {
@@ -144,36 +143,37 @@ var makeUserStore = function (init) {
                     });
                 },
                 function (callback) {
-                    r.table(table).insert(user, {returnChanges: true}).run(connection, function(err, result) {
+                    r.table(table).insert(user, {returnChanges: true}).run(connection, function (err, result) {
                         if (err) {
                             callback(err);
                         } else if (result.inserted !== 1) {
-                            callback(new Error ("User insert failed"));
+                            callback(new Error("User insert failed"));
                         } else {
                             callback(null);
                         }
                     });
                 },
                 // Close database conection
-                function(callback){
+                function (callback) {
                     connection.close();
                     callback(null);
                 }
             ],
-            // 
-            function(err, results){
-                if (err) {
-                    callback(err);
-                } else {
-                    console.log(results);
-                    callback(null, results);
-                }
-            });
+
+                function (err, results) {
+                    if (err) {
+                        callback(err);
+                    } else {
+                        console.log(results);
+                        callback(null, results);
+                    }
+                });
         },
 
         get = function (username, callback) {
-            var connection;
-            var cur
+            var connection,
+                cur;
+
             async.series([
                 function (callback) {
                     r.connect(database, function (err, conn) {
@@ -186,7 +186,7 @@ var makeUserStore = function (init) {
                     });
                 },
                 function (callback) {
-                    r.table("users").getAll(username, {index: "username"}).run(connection, function(err, cursor) {
+                    r.table("users").getAll(username, {index: "username"}).run(connection, function (err, cursor) {
                         if (err) {
                             callback(err);
                         } else {
@@ -196,48 +196,36 @@ var makeUserStore = function (init) {
                     });
                 },
                 function (callback) {
-                    cur.toArray(function(err, result) {
+                    cur.toArray(function (err, result) {
                         if (err) {
                             callback(err);
                         } else if (result.length > 1) {
-                            callback (new Error("Duplicate found:", username));
+                            callback(new Error("Duplicate found:", username));
                         } else {
-                            callback (null, result[0]);
+                            callback(null, result[0]);
                         }
                     });
                 },
                 // Close database conection
-                function(callback){
+                function (callback) {
                     connection.close();
                     callback(null);
                 }
             ],
-            // 
-            function(err, results){
-                if (err) {
-                    callback(err);
-                } else {
-                    callback(null, results[2]);
-                }
-            });
-        },
-
-        close = function () {
+                function (err, results) {
+                    if (err) {
+                        callback(err);
+                    } else {
+                        callback(null, results[2]);
+                    }
+                });
         };
 
     that.setUp = setUp;
     that.put   = put;
     that.get   = get;
-    that.close = close;
 
     return that;
 };
 
-//var userStore = makeUserStore();
-//userStore.setUp(function () {
-//    console.log("Set up done");
-//});
-
 exports.makeUserStore = makeUserStore;
-
-
