@@ -31,7 +31,7 @@ var fs = require('fs');
 var pw = require('credential');
 
 var makeUserStore = require("./user_store.js");
-var users = makeUserStore.makeUserStore();
+
 
 var async = require("async");
 
@@ -248,9 +248,18 @@ app.get('/api/logout', function (req, res) {
 var port = process.env.PORT || 1337;
 
 
+var userStoreOptions = {
+    host:    "localhost",
+    port:    "28015",
+    authKey: "",
+    db:      "users",
+    table:   "users"
+};
+var users = makeUserStore.makeUserStore(userStoreOptions);
+
 users.setUp(function (err, result) {
     if (err) {
-        console.log("Users setup failed");
+        console.log("Users setup failed:", err);
     } else {
         console.log("Users set up done");
         server.listen(port, function () {
