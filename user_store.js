@@ -77,7 +77,27 @@ var makeUserStore = function (init) {
             async.series([
 
                 function connect(callback) {
-                    var maintainConnection = function () {
+                    var reopenConnection = function () {
+                        r.connect(dbOptions, function (err, conn) {
+                            if (err) {
+                                console.log("Connect failed", err);
+                                setTimeout(reopenConnection, 1000);
+                            } else {
+                                console.log("Connect OK");
+                                connection = conn;
+
+                                conn.addListener('error', function (e) {
+                                    console.log("Connection error", e);
+                                    connection.close();
+                                });
+
+                                conn.addListener('close', function () {
+                                    console.log("\nConnection closed!");
+                                    connection.removeAllListeners();
+                                    setTimeout(reopenConnection, 1000);
+                                });
+                            }
+                        });
                     };
 
                     r.connect(dbOptions, function (err, conn) {
@@ -88,17 +108,19 @@ var makeUserStore = function (init) {
                             console.log("Connect OK");
                             connection = conn;
 
-                            connection.addListener('error', function (e) {
+                            conn.addListener('error', function (e) {
                                 console.log("Connection error", e);
+                                connection.close();
                             });
 
-                            connection.addListener('close', function () {
-                                console.log("Connection closed!");
+                            conn.addListener('close', function () {
+                                console.log("\nConnection closed!");
+                                connection.removeAllListeners();
+                                setTimeout(reopenConnection, 1000);
                             });
                             callback(null);
                         }
                     });
-
                 },
 
                 function checkExists(callback) {
