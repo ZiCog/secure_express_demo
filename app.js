@@ -12,33 +12,29 @@
 
 "use strict";
 
-var https = require('https');
-var express = require("express");
-var bodyParser = require("body-parser");
-var cookieParser = require("cookie-parser");
-var expressSession = require("express-session");
-var csrf = require('csurf');
-var path = require('path');
+var https          = require('https');
+var express        = require('express');
+var bodyParser     = require('body-parser');
+var cookieParser   = require('cookie-parser');
+var expressSession = require('express-session');
+var csrf           = require('csurf');
+var path           = require('path');
+var passport       = require('passport');
+var passportLocal  = require('passport-local');
+var passportHttp   = require('passport-http');
+var helmet         = require('helmet');
+var fs             = require('fs');
+var pw             = require('credential');
+var async          = require('async');
+var makeUserStore  = require('./user_store.js');
 
-var passport = require('passport');
-var passportLocal = require('passport-local');
-var passportHttp = require('passport-http');
-
-var helmet = require('helmet');
-
-var fs = require('fs');
-
-var pw = require('credential');
-
-var makeUserStore = require("./user_store.js");
-
-
-var async = require("async");
+// SETUP
+// ==============================================
 
 process.title = 'secure_express_demo';
 
 /*jslint stupid: true*/
-var hskey = fs.readFileSync('test-key.pem');
+var hskey  = fs.readFileSync('test-key.pem');
 var hscert = fs.readFileSync('test-cert.pem');
 /*jslint stupid: false*/
 
@@ -49,7 +45,6 @@ var options = {
 
 var app = express();
 var server = https.createServer(options, app);
-
 
 // Implement Content Security Policy (CSP) with Helmet
 app.use(helmet.csp({
@@ -81,9 +76,7 @@ app.use(helmet.hsts({
 // Hide X-Powered-By
 app.use(helmet.hidePoweredBy());
 
-
 app.set('view engine', 'ejs');
-
 
 app.use(bodyParser.urlencoded({ extended: false}));
 app.use(cookieParser());
@@ -167,12 +160,18 @@ function ensureAuthenticated(req, res, next) {
     }
 }
 
+// APPLICATION ROUTES
+// ==============================================
+
+// Get an instance of router
+var router = express.Router();
+
 // Server static files from our public directory
 /*jslint nomen: true*/
 app.use(express.static(path.join(__dirname, 'public')));
 /*jslint nomen: false*/
 
-app.get('/', function (req, res) {
+router.get('/', function (req, res) {
     // TODO: AN IMPORTANT DECISION LIKE isAuthenticated SHOULD NOT BE LEFT TO THE VIEW !
     //       DIFFERENT VIEWS SHOULD BE SELECTED FOR LOGED IN OR LOGED OUT
     res.render('index', {
@@ -181,13 +180,13 @@ app.get('/', function (req, res) {
     });
 });
 
-app.get('/register', function (req, res) {
+router.get('/register', function (req, res) {
     res.render('register', {
         csrf: req.csrfToken()
     });
 });
 
-app.post('/register', function (req, res) {
+router.post('/register', function (req, res) {
     console.log ("Register: ", req.body.email, req.body.username, req.body.password);
 
     pw.hash(req.body.password, function (err, hash) {
@@ -205,31 +204,39 @@ app.post('/register', function (req, res) {
     res.redirect('/');
 });
 
-app.get('/login', function (req, res) {
+router.get('/login', function (req, res) {
     res.render('login', {
         csrf: req.csrfToken()
     });
 });
 
-app.post('/login', passport.authenticate('local'), function (req, res) {
+router.post('/login', passport.authenticate('local'), function (req, res) {
     res.redirect('/');
 });
 
-
-app.get('/logout', function (req, res) {
+router.get('/logout', function (req, res) {
     req.logout();
     res.redirect('/');
 });
 
-app.get('/spa', ensureAuthenticated, function (req, res) {
+router.get('/spa', ensureAuthenticated, function (req, res) {
     res.render('spa', {
         csrf: req.csrfToken()
     });
 });
 
-app.use('/api', passport.authenticate('basic', { session: false }));
+// Apply the routes to our application
+app.use('/', router);
 
-app.get('/api/data', ensureAuthenticated, function (req, res) {
+// API ROUTES
+// ==============================================
+
+// Get an instance of router
+var apiRouter = express.Router();
+
+apiRouter.use(passport.authenticate('basic', { session: false }));
+
+apiRouter.get('/data', ensureAuthenticated, function (req, res) {
     res.json([
         {value: 'foo'},
         {value: 'bar'},
@@ -242,12 +249,17 @@ app.get('/api/data', ensureAuthenticated, function (req, res) {
 // Note: This logout is a work around for the fact the Chrome, FF, etc seem to remeber basic 
 //       auth credentials and they are hard to clear from the browser.
 //       http://stackoverflow.com/questions/4163122/http-basic-authentication-log-out
-app.get('/api/logout', function (req, res) {
+apiRouter.get('/logout', function (req, res) {
     res.sendStatus(401);
 });
 
-var port = process.env.PORT || 1337;
+// Apply the routes to our application
+app.use('/api', apiRouter);
 
+// START THE SERVER
+// ==============================================
+
+var port = process.env.PORT || 1337;
 
 var userStoreOptions = {
     host:    "localhost",
