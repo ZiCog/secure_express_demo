@@ -26,7 +26,9 @@ var helmet         = require('helmet');
 var fs             = require('fs');
 var pw             = require('credential');
 var async          = require('async');
+
 var makeUserStore  = require('./user_store.js');
+var birds          = require('./birds');
 
 // SETUP
 // ==============================================
@@ -162,16 +164,20 @@ function ensureAuthenticated(req, res, next) {
     }
 }
 
+// Server static files from our public directory
+/*jslint nomen: true*/
+app.use(express.static(path.join(__dirname, 'public')));
+/*jslint nomen: false*/
+
+
+
+
 // APPLICATION ROUTES
 // ==============================================
 
 // Get an instance of router
 var router = express.Router();
 
-// Server static files from our public directory
-/*jslint nomen: true*/
-app.use(express.static(path.join(__dirname, 'public')));
-/*jslint nomen: false*/
 
 router.get('/', function (req, res) {
     // TODO: AN IMPORTANT DECISION LIKE isAuthenticated SHOULD NOT BE LEFT TO THE VIEW !
@@ -257,6 +263,16 @@ apiRouter.get('/logout', function (req, res) {
 
 // Apply the routes to our application
 app.use('/api', apiRouter);
+
+// BIRDS ROUTES
+// ==============================================
+
+var birds = require('./birds');
+
+app.use(ensureAuthenticated);
+
+app.use('/birds', birds);
+
 
 // START THE SERVER
 // ==============================================
