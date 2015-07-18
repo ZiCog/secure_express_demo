@@ -1,34 +1,34 @@
-// 
+//
 // Passport authentication demo.
 //
-// Built from the presentation by Jason Diamond, "Authentication of Express Node js Applications" 
+// Built from the presentation by Jason Diamond, "Authentication of Express Node js Applications"
 //     https://www.youtube.com/watch?v=twav6O53zIQ
 //
 // With aditional advice from Scott Smith,
-//     http://scottksmith.com/blog/2014/09/21/protect-your-node-apps-noggin-with-helmet/ 
+//     http://scottksmith.com/blog/2014/09/21/protect-your-node-apps-noggin-with-helmet/
 //
 
 // TODO: Use caja input sanitizer
 
+/*jslint node: true */
 "use strict";
 
-var https          = require('https');
-var express        = require('express');
-var bodyParser     = require('body-parser');
-var cookieParser   = require('cookie-parser');
-var expressSession = require('express-session');
-var csrf           = require('csurf');
-var path           = require('path');
-var passport       = require('passport');
-var passportLocal  = require('passport-local');
-var passportHttp   = require('passport-http');
-var helmet         = require('helmet');
-var fs             = require('fs');
-var pw             = require('credential');
-var async          = require('async');
+let https          = require('https');
+let express        = require('express');
+let bodyParser     = require('body-parser');
+let cookieParser   = require('cookie-parser');
+let expressSession = require('express-session');
+let csrf           = require('csurf');
+let path           = require('path');
+let passport       = require('passport');
+let passportLocal  = require('passport-local');
+let passportHttp   = require('passport-http');
+let helmet         = require('helmet');
+let fs             = require('fs');
+let pw             = require('credential');
+let async          = require('async');
 
-var makeUserStore  = require('./user_store.js');
-var birds          = require('./birds');
+let makeUserStore  = require('./user_store.js');
 
 // SETUP
 // ==============================================
@@ -36,17 +36,17 @@ var birds          = require('./birds');
 process.title = 'secure_express_demo';
 
 /*jslint stupid: true*/
-var hskey  = fs.readFileSync('test-key.pem');
-var hscert = fs.readFileSync('test-cert.pem');
+let hskey  = fs.readFileSync('test-key.pem');
+let hscert = fs.readFileSync('test-cert.pem');
 /*jslint stupid: false*/
 
-var options = {
+let options = {
     key:  hskey,
     cert: hscert
 };
 
-var app = express();
-var server = https.createServer(options, app);
+let app = express();
+let server = https.createServer(options, app);
 
 // Implement Content Security Policy (CSP) with Helmet
 app.use(helmet.csp({
@@ -59,7 +59,7 @@ app.use(helmet.csp({
     objectSrc:   [],
     mediaSrc:    [],
     frameSrc:    []
-// TODO: CSP Violation reporting
+    // TODO: CSP Violation reporting
 }));
 
 // Implement X-XSS-Protection
@@ -69,7 +69,7 @@ app.use(helmet.xssFilter());
 app.use(helmet.xframe('deny'));
 
 // Implement Strict-Transport-Security
-// Note: This does not work unless we actually use HTTPS (req.secure = true) 
+// Note: This does not work unless we actually use HTTPS (req.secure = true)
 app.use(helmet.hsts({
     maxAge: 7776000000,      // 90 days
     includeSubdomains: true
@@ -81,7 +81,7 @@ app.use(helmet.hidePoweredBy());
 app.set('view engine', 'ejs');
 
 app.use(bodyParser.urlencoded({
-    extended: false,
+    extended: false
 }));
 app.use(cookieParser());
 
@@ -102,7 +102,7 @@ app.use(csrf());
 
 function verifyCredentials(username, password, done) {
     console.log("Verifying user:", username, " Password:", password);
-    var foundUser;
+    let foundUser;
     async.series([
         function (callback) {
             users.get(username, function (err, user) {
@@ -151,7 +151,7 @@ passport.serializeUser(function (user, done) {
 });
 
 passport.deserializeUser(function (id, done) {
-     // Query database or cache here
+    // Query database or cache here
     done(null, { id: id, name: id });
 });
 
@@ -176,7 +176,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ==============================================
 
 // Get an instance of router
-var router = express.Router();
+let router = express.Router();
 
 
 router.get('/', function (req, res) {
@@ -195,17 +195,19 @@ router.get('/register', function (req, res) {
 });
 
 router.post('/register', function (req, res) {
-    console.log ("Register: ", req.body.email, req.body.username, req.body.password);
+    console.log("Register: ", req.body.email, req.body.username, req.body.password);
 
     pw.hash(req.body.password, function (err, hash) {
-        if (err) { throw err; }
-        var user = {};
+        if (err) {
+            throw err;
+        }
+        let user = {};
         user.username = req.body.username;
         user.passwordHash = hash;
         user.email = req.body.email;
         users.put(user, function (err) {
             if (err) {
-                console.log ("user.put failed", err);
+                console.log("user.put failed", err);
             }
         });
     });
@@ -240,7 +242,7 @@ app.use('/', router);
 // ==============================================
 
 // Get an instance of router
-var apiRouter = express.Router();
+let apiRouter = express.Router();
 
 apiRouter.use(passport.authenticate('basic', { session: false }));
 
@@ -254,7 +256,7 @@ apiRouter.get('/data', ensureAuthenticated, function (req, res) {
     ]);
 });
 
-// Note: This logout is a work around for the fact the Chrome, FF, etc seem to remeber basic 
+// Note: This logout is a work around for the fact the Chrome, FF, etc seem to remeber basic
 //       auth credentials and they are hard to clear from the browser.
 //       http://stackoverflow.com/questions/4163122/http-basic-authentication-log-out
 apiRouter.get('/logout', function (req, res) {
@@ -267,7 +269,7 @@ app.use('/api', apiRouter);
 // BIRDS ROUTES
 // ==============================================
 
-var birds = require('./birds');
+let birds = require('./birds');
 
 app.use(ensureAuthenticated);
 
@@ -277,16 +279,16 @@ app.use('/birds', birds);
 // START THE SERVER
 // ==============================================
 
-var port = process.env.PORT || 1337;
+let port = process.env.PORT || 1337;
 
-var userStoreOptions = {
+let userStoreOptions = {
     host:    "localhost",
     port:    "28015",
     authKey: "",
     db:      "users",
     table:   "users"
 };
-var users = makeUserStore.makeUserStore(userStoreOptions);
+let users = makeUserStore.makeUserStore(userStoreOptions);
 
 users.setUp(function (err, result) {
     if (err) {
@@ -299,12 +301,3 @@ users.setUp(function (err, result) {
         });
     }
 });
-
-
-
-
-
-
-
-
-

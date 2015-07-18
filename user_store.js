@@ -1,10 +1,11 @@
+/*jslint node: true */
 "use strict";
 
-var r = require('rethinkdb');
-var async = require('async');
+let rethink = require('rethinkdb');
+let async = require('async');
 
-var makeUserStore = function (init) {
-    var pub = {},
+let makeUserStore = function (init) {
+    let pub = {},
 
         dbOptions = {
             host: init.host,
@@ -21,7 +22,7 @@ var makeUserStore = function (init) {
             async.series([
 
                 function createDatabase(callback) {
-                    r.dbCreate(db).run(connection, function (err, result) {
+                    rethink.dbCreate(db).run(connection, function (err, result) {
                         if (err && (!err.message.match(/Database `[a-z,0-9]*` already exists/))) {
                             callback(err);
                         } else {
@@ -32,7 +33,7 @@ var makeUserStore = function (init) {
                 },
 
                 function createTable(callback) {
-                    r.tableCreate(table).run(connection, function (err, result) {
+                    rethink.tableCreate(table).run(connection, function (err, result) {
                         if (err && (!err.message.match(/Table `[a-z,0-9,\.]*` already exists/))) {
                             callback(err);
                         } else {
@@ -43,7 +44,7 @@ var makeUserStore = function (init) {
                 },
 
                 function createIndex(callback) {
-                    r.table(table).indexCreate(index).run(connection, function (err, result) {
+                    rethink.table(table).indexCreate(index).run(connection, function (err, result) {
                         if (err && (!err.message.match(/Index `[a-z,0-9]*` already exists/))) {
                             callback(err);
                         } else {
@@ -54,7 +55,7 @@ var makeUserStore = function (init) {
                 },
                 // Wait for index completion
                 function waitIndex(callback) {
-                    r.table(table).indexWait(index).run(connection, function (err, result) {
+                    rethink.table(table).indexWait(index).run(connection, function (err, result) {
                         if (err) {
                             callback(err);
                         } else {
@@ -62,23 +63,23 @@ var makeUserStore = function (init) {
                             callback(null);
                         }
                     });
-                },
+                }
             ],
-                function asyncDone(err, results) {
-                    if (err) {
-                        callback(err);
-                    } else {
-                        callback(null);
-                    }
-                });
+            function asyncDone(err, results) {
+                if (err) {
+                    callback(err);
+                } else {
+                    callback(null);
+                }
+            });
         },
 
         setUp = function (callback) {
             async.series([
 
                 function connect(callback) {
-                    var reopenConnection = function () {
-                        r.connect(dbOptions, function (err, conn) {
+                    let reopenConnection = function () {
+                        rethink.connect(dbOptions, function (err, conn) {
                             if (err) {
                                 console.log("Connect failed", err);
                                 setTimeout(reopenConnection, 1000);
@@ -100,7 +101,7 @@ var makeUserStore = function (init) {
                         });
                     };
 
-                    r.connect(dbOptions, function (err, conn) {
+                    rethink.connect(dbOptions, function (err, conn) {
                         if (err) {
                             console.log("Connect failed", err);
                             callback(err);
@@ -124,7 +125,7 @@ var makeUserStore = function (init) {
                 },
 
                 function checkExists(callback) {
-                    r.table(table).indexWait(index).run(connection, function (err, result) {
+                    rethink.table(table).indexWait(index).run(connection, function (err, result) {
                         if (err) {
                             // The database/table/index was not available, create them
                             createDatabase(connection, function (err, result) {
@@ -138,22 +139,22 @@ var makeUserStore = function (init) {
                             callback(null);
                         }
                     });
-                },
+                }
             ],
-                function asyncDone(err, results) {
-                    if (err) {
-                        callback(err);
-                    } else {
-                        callback(null);
-                    }
-                });
+            function asyncDone(err, results) {
+                if (err) {
+                    callback(err);
+                } else {
+                    callback(null);
+                }
+            });
         },
 
         put = function (user, callback) {
             async.series([
 
                 function checkDuplicate(callback) {
-                    r.table(table).getAll(user.username, {index: index}).isEmpty().run(connection, function (err, result) {
+                    rethink.table(table).getAll(user.username, {index: index}).isEmpty().run(connection, function (err, result) {
                         if (err) {
                             callback(err);
                         } else if (result === true) {
@@ -164,7 +165,7 @@ var makeUserStore = function (init) {
                     });
                 },
                 function insert(callback) {
-                    r.table(table).insert(user, {returnChanges: true}).run(connection, function (err, result) {
+                    rethink.table(table).insert(user, {returnChanges: true}).run(connection, function (err, result) {
                         if (err) {
                             callback(err);
                         } else if (result.inserted !== 1) {
@@ -173,24 +174,24 @@ var makeUserStore = function (init) {
                             callback(null);
                         }
                     });
-                },
+                }
             ],
-                function asyncDone(err, results) {
-                    if (err) {
-                        callback(err);
-                    } else {
-                        console.log(results);
-                        callback(null, results);
-                    }
-                });
+            function asyncDone(err, results) {
+                if (err) {
+                    callback(err);
+                } else {
+                    console.log(results);
+                    callback(null, results);
+                }
+            });
         },
 
         get = function (username, callback) {
-            var cur;
+            let cur;
 
             async.series([
                 function get(callback) {
-                    r.table("users").getAll(username, {index: index}).run(connection, function (err, cursor) {
+                    rethink.table("users").getAll(username, {index: index}).run(connection, function (err, cursor) {
                         if (err) {
                             callback(err);
                         } else {
@@ -209,16 +210,16 @@ var makeUserStore = function (init) {
                             callback(null, result[0]);
                         }
                     });
-                },
+                }
             ],
-                function asyncDone(err, results) {
-                    console.log("Get results:", results);
-                    if (err) {
-                        callback(err);
-                    } else {
-                        callback(null, results[1]);
-                    }
-                });
+            function asyncDone(err, results) {
+                console.log("Get results:", results);
+                if (err) {
+                    callback(err);
+                } else {
+                    callback(null, results[1]);
+                }
+            });
         };
 
     pub.setUp = setUp;

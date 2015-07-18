@@ -1,8 +1,9 @@
+/*jslint node: true */
 "use strict";
 
-var express = require('express');
+let express = require('express');
 
-var router = express.Router();
+let router = express.Router();
 
 // Middleware specific to this router
 router.use(function timeLog(req, res, next) {
@@ -11,12 +12,12 @@ router.use(function timeLog(req, res, next) {
 });
 
 // Define the home page route
-router.get('/', function(req, res) {
-   res.send('Birds home page');
+router.get('/', function (req, res) {
+    res.send('Birds home page');
 });
 
 // define the about route
-router.get('/about', function(req, res) {
+router.get('/about', function (req, res) {
     res.send('About birds');
 });
 
