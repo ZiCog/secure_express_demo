@@ -17,7 +17,7 @@
     "passport": "^0.2.1",
     "passport-http": "^0.2.2",
     "passport-local": "^1.0.0",
-    "rethinkdb": "^1.15.0-0"
+    "rethinkdb": "^2.1.0"
   },
   "devDependencies": {},
   "scripts": {
