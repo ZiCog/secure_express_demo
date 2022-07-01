@@ -14,8 +14,8 @@
     "express": "^4.10.6",
     "express-session": "^1.9.3",
     "helmet": "^0.11.0",
-    "passport": "^0.2.1",
-    "passport-http": "^0.2.2",
+    "passport": "^0.6.0",
+    "passport-http": "^0.3.0",
     "passport-local": "^1.0.0",
     "rethinkdb": "^1.15.0-0"
   },
